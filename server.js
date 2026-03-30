@@ -23,7 +23,7 @@ app.use(express.json());
 // Without this the browser blocks cross-origin requests
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "https://glittery-belekoy-b10d64.netlify.app/",
     credentials: true,
   })
 );
@@ -53,5 +53,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 CORS enabled for: ${process.env.CLIENT_URL || "http://localhost:3000"}`);
+  console.log(`📡 CORS enabled for: ${process.env.CLIENT_URL || "https://glittery-belekoy-b10d64.netlify.app/"}`);
 });
