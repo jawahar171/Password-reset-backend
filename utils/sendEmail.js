@@ -1,142 +1,80 @@
-// ═══════════════════════════════════════════════
-//  utils/sendEmail.js  —  Email Sender (Nodemailer)
-//
-//  Uses Gmail SMTP with an App Password.
-//  Sends styled HTML email with the reset link.
-// ═══════════════════════════════════════════════
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
 
 /**
- * sendResetEmail
- * Sends the password reset email to the user.
- *
- * @param {string} toEmail    - recipient's email address
- * @param {string} username   - recipient's name (for personalisation)
- * @param {string} resetUrl   - full reset link to embed in the email
+ * Creates a Nodemailer transporter based on env config.
+ * Supports Gmail (with App Password), SendGrid, Mailtrap, or any SMTP.
  */
-const sendResetEmail = async (toEmail, username, resetUrl) => {
-  // ── Build Transporter ─────────────────────
-  // This is the SMTP connection config.
-  // For Gmail, use an App Password (not your real password).
-  // How to get one: Google Account → Security → 2FA → App Passwords → Generate
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,   // smtp.gmail.com
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false,                  // false = STARTTLS on port 587
+const createTransporter = () => {
+  // --- Option 1: Gmail with App Password (most common) ---
+  if (process.env.EMAIL_SERVICE === 'gmail') {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // Use Gmail App Password, NOT your real password
+      },
+    });
+  }
+
+  // --- Option 2: SendGrid ---
+  if (process.env.EMAIL_SERVICE === 'sendgrid') {
+    return nodemailer.createTransport({
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY,
+      },
+    });
+  }
+
+  // --- Option 3: Generic SMTP (Mailtrap, Brevo, etc.) ---
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT, 10) || 587,
+    secure: process.env.SMTP_SECURE === 'true', // true for port 465
     auth: {
-      user: process.env.EMAIL_USER, // your Gmail address
-      pass: process.env.EMAIL_PASS, // 16-char App Password
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
+};
 
-  // ── Styled HTML Email Body ────────────────
-  // Professional-looking email using inline styles (email clients strip CSS classes)
-  const htmlBody = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8"/>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    </head>
-    <body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:40px 0;">
-        <tr>
-          <td align="center">
-            <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-              
-              <!-- Header -->
-              <tr>
-                <td style="background:linear-gradient(135deg,#1a237e 0%,#283593 100%);padding:36px 40px;text-align:center;">
-                  <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:700;letter-spacing:-0.5px;">
-                    🔐 Password Reset
-                  </h1>
-                  <p style="color:rgba(255,255,255,0.75);margin:8px 0 0;font-size:14px;">
-                    Secure reset request
-                  </p>
-                </td>
-              </tr>
+/**
+ * Sends a password reset email.
+ * @param {string} to - Recipient email address
+ * @param {string} resetURL - Full reset link
+ */
+const sendPasswordResetEmail = async (to, resetURL) => {
+  const transporter = createTransporter();
 
-              <!-- Body -->
-              <tr>
-                <td style="padding:40px;">
-                  <p style="color:#37474f;font-size:16px;margin:0 0 12px;">
-                    Hi <strong>${username}</strong>,
-                  </p>
-                  <p style="color:#546e7a;font-size:15px;line-height:1.7;margin:0 0 24px;">
-                    We received a request to reset the password for your account. 
-                    Click the button below to set a new password.
-                  </p>
+  // Verify connection before sending
+  await transporter.verify();
 
-                  <!-- CTA Button -->
-                  <div style="text-align:center;margin:32px 0;">
-                    <a href="${resetUrl}"
-                       style="display:inline-block;background:#1a237e;color:#ffffff;text-decoration:none;
-                              padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;
-                              letter-spacing:0.3px;">
-                      Reset My Password
-                    </a>
-                  </div>
+  const mailOptions = {
+    from: `"${process.env.EMAIL_FROM_NAME || 'Support'}" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+    to,
+    subject: 'Password Reset Request',
+    text: `You requested a password reset.\n\nClick the link below to reset your password:\n${resetURL}\n\nThis link expires in 1 hour.\n\nIf you did not request this, please ignore this email.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <h2 style="color: #111827;">Password Reset Request</h2>
+        <p style="color: #374151;">You requested to reset your password. Click the button below:</p>
+        <a href="${resetURL}" 
+           style="display: inline-block; margin: 16px 0; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          Reset My Password
+        </a>
+        <p style="color: #6B7280; font-size: 14px;">This link expires in <strong>1 hour</strong>.</p>
+        <p style="color: #6B7280; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+        <p style="color: #9CA3AF; font-size: 12px;">Or copy and paste this URL into your browser:<br/>${resetURL}</p>
+      </div>
+    `,
+  };
 
-                  <!-- Expiry Warning -->
-                  <div style="background:#fff8e1;border-left:4px solid #ffc107;border-radius:4px;padding:14px 18px;margin:24px 0;">
-                    <p style="margin:0;color:#795548;font-size:14px;">
-                      ⏱ <strong>This link expires in ${process.env.RESET_TOKEN_EXPIRE_MINUTES || 10} minutes.</strong>
-                      After that you'll need to request a new one.
-                    </p>
-                  </div>
-
-                  <!-- Raw Link Fallback -->
-                  <p style="color:#90a4ae;font-size:13px;line-height:1.6;margin:20px 0 0;">
-                    If the button doesn't work, copy and paste this link into your browser:<br/>
-                    <a href="${resetUrl}" style="color:#1a237e;word-break:break-all;">${resetUrl}</a>
-                  </p>
-
-                  <p style="color:#b0bec5;font-size:13px;margin:24px 0 0;">
-                    If you did not request a password reset, please ignore this email. 
-                    Your password will remain unchanged.
-                  </p>
-                </td>
-              </tr>
-
-              <!-- Footer -->
-              <tr>
-                <td style="background:#f8f9fa;padding:20px 40px;text-align:center;border-top:1px solid #eceff1;">
-                  <p style="color:#b0bec5;font-size:12px;margin:0;">
-                    © ${new Date().getFullYear()} Password Reset App. All rights reserved.
-                  </p>
-                </td>
-              </tr>
-
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `;
-
-  // ── Plain-text fallback ───────────────────
-  const textBody = `
-Hi ${username},
-
-You requested a password reset. Use the link below (valid for ${process.env.RESET_TOKEN_EXPIRE_MINUTES || 10} minutes):
-
-${resetUrl}
-
-If you did not request this, ignore this email.
-  `.trim();
-
-  // ── Send the email ────────────────────────
-  const info = await transporter.sendMail({
-    from: process.env.EMAIL_FROM || `"Password Reset App" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
-    subject: "🔐 Password Reset Request",
-    text: textBody,
-    html: htmlBody,
-  });
-
-  console.log(`📧 Reset email sent to ${toEmail} — Message ID: ${info.messageId}`);
+  const info = await transporter.sendMail(mailOptions);
+  console.log('✅ Reset email sent:', info.messageId);
   return info;
 };
 
-module.exports = sendResetEmail;
+module.exports = { sendPasswordResetEmail };

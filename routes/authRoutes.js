@@ -1,21 +1,18 @@
-// ═══════════════════════════════════════════════
-//  routes/authRoutes.js
-// ═══════════════════════════════════════════════
-const express = require("express");
-const router  = express.Router();
+const express = require('express');
+const router = express.Router();
 const {
   register,
   login,
   forgotPassword,
-  verifyResetToken,
   resetPassword,
-} = require("../controllers/authController");
+  verifyResetToken,
+} = require('../controllers/authController');
 
-// ── Public Routes (no login required) ─────────
-router.post("/register",         register);
-router.post("/login",            login);
-router.post("/forgot-password",  forgotPassword);          // Flow 1
-router.get( "/verify-token/:token", verifyResetToken);     // Flow 2 — verify link
-router.post("/reset-password/:token", resetPassword);      // Flow 2 — set new password
+// Auth routes
+router.post('/register', register);
+router.post('/login', login);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
+router.get('/verify-reset-token/:token', verifyResetToken); // optional
 
 module.exports = router;
