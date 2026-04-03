@@ -8,11 +8,10 @@ const {
   verifyResetToken,
 } = require('../controllers/authController');
 
-// Auth routes
 router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
-router.get('/verify-reset-token/:token', verifyResetToken); // optional
+router.get('/verify-reset-token/:token', verifyResetToken);
 
 module.exports = router;

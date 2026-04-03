@@ -20,15 +20,8 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Password is required'],
       minlength: 6,
     },
-    // ✅ Password reset fields
-    resetPasswordToken: {
-      type: String,
-      default: undefined,
-    },
-    resetPasswordExpires: {
-      type: Date,
-      default: undefined,
-    },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
   },
   { timestamps: true }
 );
@@ -40,7 +33,7 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Compare passwords
+// Compare password helper
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
