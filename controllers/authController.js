@@ -78,7 +78,7 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
     await user.save({ validateBeforeSave: false });
 
-    const clientURL = process.env.CLIENT_URL || 'http://localhost:3000';
+    const clientURL = process.env.CLIENT_URL || 'https://glittery-belekoy-b10d64.netlify.app';
     const resetURL = `${clientURL}/reset-password/${rawToken}`;
 
     try {
