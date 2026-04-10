@@ -1,44 +1,26 @@
-const express = require("express");
-const router = express.Router();
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
+const express = require('express');
+const router  = express.Router();
+const {
+  register,
+  login,
+  forgotPassword,
+  resetPassword,
+  verifyResetToken,
+} = require('../controllers/authController');
 
-// REGISTER
-router.post("/register", async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
+// POST /api/auth/register
+router.post('/register', register);
 
-    console.log("BODY:", req.body);
+// POST /api/auth/login
+router.post('/login', login);
 
-    // Validation
-    if (!username?.trim() || !email?.trim() || !password?.trim()) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+// POST /api/auth/forgot-password
+router.post('/forgot-password', forgotPassword);
 
-    // Check existing user
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+// POST /api/auth/reset-password/:token
+router.post('/reset-password/:token', resetPassword);
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Save user
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-    });
-
-    await newUser.save();
-
-    res.status(201).json({ message: "User registered successfully ✅" });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error ❌" });
-  }
-});
+// GET  /api/auth/verify-reset-token/:token  (optional — for frontend token validation)
+router.get('/verify-reset-token/:token', verifyResetToken);
 
 module.exports = router;
