@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const router  = express.Router();
 const {
   register,
@@ -6,21 +6,12 @@ const {
   forgotPassword,
   resetPassword,
   verifyResetToken,
-} = require('../controllers/authController');
+} = require("../controllers/authController");
 
-// POST /api/auth/register
-router.post('/register', register);
-
-// POST /api/auth/login
-router.post('/login', login);
-
-// POST /api/auth/forgot-password
-router.post('/forgot-password', forgotPassword);
-
-// POST /api/auth/reset-password/:token
-router.post('/reset-password/:token', resetPassword);
-
-// GET  /api/auth/verify-reset-token/:token  (optional — for frontend token validation)
-router.get('/verify-reset-token/:token', verifyResetToken);
+router.post("/register",              register);
+router.post("/login",                 login);
+router.post("/forgot-password",       forgotPassword);
+router.post("/reset-password/:token", resetPassword);
+router.get("/verify-token/:token",    verifyResetToken);  // FIX: was /verify-reset-token/:token
 
 module.exports = router;
