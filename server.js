@@ -9,14 +9,32 @@ const userRoutes = require("./routes/userRoutes");
 const app = express();
 
 // ── CORS ───────────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || "https://glittery-belekoy-b10d64.netlify.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-  ],
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowed = [
+      "https://glittery-belekoy-b10d64.netlify.app",
+      process.env.CLIENT_URL,
+      "http://localhost:3000",
+      "http://localhost:5173",
+    ].filter(Boolean);
+
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+
+    if (allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS: " + origin));
+    }
+  },
   credentials: true,
-}));
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// Handle preflight OPTIONS requests for ALL routes — must be BEFORE other middleware
+app.options("*", cors(corsOptions));
+app.use(cors(corsOptions));
 
 // ── Middleware ─────────────────────────────────────────────────────────────
 app.use(express.json());
