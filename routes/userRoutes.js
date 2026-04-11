@@ -1,12 +1,17 @@
-// ═══════════════════════════════════════════════
-//  routes/userRoutes.js  —  Protected Routes
-// ═══════════════════════════════════════════════
-const express  = require("express");
-const router   = express.Router();
-const { getProfile } = require("../controllers/userController");
-const { protect }    = require("../middleware/authMiddleware");
+const express    = require("express");
+const router     = express.Router();
+const { protect } = require("../middleware/authMiddleware");
 
-// protect middleware runs before getProfile — rejects if no valid JWT
-router.get("/profile", protect, getProfile);
+router.get("/profile", protect, (req, res) => {
+  res.json({
+    message: "Profile fetched successfully.",
+    user: {
+      id:       req.user._id,
+      username: req.user.username,
+      email:    req.user.email,
+      createdAt: req.user.createdAt,
+    },
+  });
+});
 
 module.exports = router;

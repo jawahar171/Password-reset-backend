@@ -4,22 +4,22 @@ const bcrypt   = require("bcryptjs");
 const userSchema = new mongoose.Schema(
   {
     username: {
-      type: String,
-      required: [true, "Username is required"],
-      trim: true,
+      type:      String,
+      required:  [true, "Username is required"],
+      trim:      true,
       minlength: [2, "Username must be at least 2 characters"],
     },
     email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
+      type:      String,
+      required:  [true, "Email is required"],
+      unique:    true,
       lowercase: true,
-      trim: true,
-      match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
+      trim:      true,
+      match:     [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
     },
     password: {
-      type: String,
-      required: [true, "Password is required"],
+      type:      String,
+      required:  [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters"],
     },
     resetPasswordToken:   { type: String, default: undefined },
@@ -28,14 +28,20 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving (only when modified)
+// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  console.log("🔐 Hashing password for:", this.email);
+  try {
+    this.password = await bcrypt.hash(this.password, 12);
+    console.log("✅ Password hashed successfully");
+    next();
+  } catch (err) {
+    console.error("❌ bcrypt hash error:", err.message);
+    next(err);
+  }
 });
 
-// Compare plaintext with stored hash
 userSchema.methods.comparePassword = async function (candidate) {
   return bcrypt.compare(candidate, this.password);
 };
