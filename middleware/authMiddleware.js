@@ -1,50 +1,27 @@
-// ═══════════════════════════════════════════════
-//  middleware/authMiddleware.js  —  JWT Auth Guard
-// ═══════════════════════════════════════════════
 const jwt  = require("jsonwebtoken");
 const User = require("../models/User");
 
-/**
- * protect
- * Express middleware that validates a Bearer JWT.
- * Attaches the authenticated user to req.user.
- * Must be added to any route that requires login.
- */
 const protect = async (req, res, next) => {
-  let token;
-
-  // Extract token from "Authorization: Bearer <token>" header
-  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
-    token = req.headers.authorization.split(" ")[1];
-  }
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: "Access denied. Please log in first.",
-    });
-  }
-
   try {
-    // Verify token signature and expiry
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer "))
+      return res.status(401).json({ message: "No token provided. Please log in." });
+
+    const token   = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch the user from DB (excluding password)
-    req.user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id).select("-password -resetPasswordToken -resetPasswordExpires");
+    if (!user)
+      return res.status(401).json({ message: "User no longer exists." });
 
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "User no longer exists.",
-      });
-    }
-
-    next(); // Token is valid — proceed to route handler
-  } catch (error) {
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ success: false, message: "Session expired. Please log in again." });
-    }
-    return res.status(401).json({ success: false, message: "Invalid token." });
+    req.user = user;
+    next();
+  } catch (err) {
+    if (err.name === "TokenExpiredError")
+      return res.status(401).json({ message: "Session expired. Please log in again." });
+    if (err.name === "JsonWebTokenError")
+      return res.status(401).json({ message: "Invalid token. Please log in again." });
+    res.status(500).json({ message: "Server error.", error: err.message });
   }
 };
 
